@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Exe" ADD COLUMN     "level" INTEGER NOT NULL DEFAULT 1;

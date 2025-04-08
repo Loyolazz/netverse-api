@@ -24,25 +24,28 @@ model User {
 }
 
 model Exe {
-  id         String   @id @default(uuid())
-  name       String
-  stage      Stage
-  type       ExeType
-  pot        Int
-  res        Int
-  spd        Int
-  syc        Int
-  tec        Int
-  bond       Int
-  corruption Int
-  hunger     Int
-  hygiene    Int
-  sleep      Int
-  isAlive    Boolean  @default(true)
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  stage       Stage
+  type        ExeType
+  level       Int      @default(1)
+  pot         Int
+  res         Int
+  spd         Int
+  syc         Int
+  tec         Int
+  bond        Int
+  corruption  Int
+  hunger      Int
+  hygiene     Int
+  sleep       Int
+  imageUrl    String?
+  description String?
+  isAlive     Boolean  @default(true)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum Stage {
