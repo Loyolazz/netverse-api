@@ -36,22 +36,14 @@ export class ExeService {
     }
 
     async evolve(exeId: string, userId: string) {
-        // Busca o .exe e garante que o usuário logado é o dono
         const exe = await this.prisma.exe.findFirst({ where: { id: exeId, userId } });
         if (!exe) throw new NotFoundException('Exe not found');
-        // Lógica de evolução baseada em thresholds de nível
-        // Exemplo: thresholds:
-        // - De "ini" para "boot": level >= 15
-        // - De "boot" para "sys": level >= 30
-        // - De "sys" para "core": level >= 45
-        // - De "core" para "root": level >= 60
         let updatedExe = exe;
         if (exe.stage === 'ini' && exe.level >= 15) {
             updatedExe = await this.prisma.exe.update({
                 where: { id: exe.id },
                 data: {
                     stage: 'boot',
-                    // buffs de atributos
                     pot: exe.pot + 2,
                     res: exe.res + 2,
                     spd: exe.spd + 1,
