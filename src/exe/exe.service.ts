@@ -30,7 +30,6 @@ export class ExeService {
         });
     }
 
-
     async findAllByUser(userId: string) {
         return this.prisma.exe.findMany({ where: { userId } });
     }
@@ -92,4 +91,167 @@ export class ExeService {
         }
         return updatedExe;
     }
+
+    async feed(exeId: string, userId: string) {
+        const exe = await this.prisma.exe.findFirst({ where: { id: exeId, userId } });
+        if (!exe) throw new NotFoundException('Exe not found');
+
+        const decayedExe = await this.applyDecayAndReturn(exe);
+
+        const newHunger = Math.min(100, decayedExe.hunger + 20);
+        const newBond = Math.min(100, decayedExe.bond + 2);
+        const newCorruption = Math.max(0, decayedExe.corruption - 1);
+        const now = new Date();
+
+        return this.prisma.exe.update({
+            where: { id: exe.id },
+            data: {
+                hunger: newHunger,
+                bond: newBond,
+                corruption: newCorruption,
+                updatedAt: now,
+            },
+        });
+    }
+
+    private async applyDecayAndReturn(exe: any) {
+        const { decay, updatedAt } = this.calculateDecay(exe);
+
+        return this.prisma.exe.update({
+            where: { id: exe.id },
+            data: {
+                hunger: decay.hunger,
+                sleep: decay.sleep,
+                hygiene: decay.hygiene,
+                bond: decay.bond,
+                corruption: decay.corruption,
+                updatedAt,
+            },
+        });
+
+    }
+
+    private calculateDecay(exe: any) {
+        const now = new Date();
+        const hours = (now.getTime() - new Date(exe.updatedAt).getTime()) / 3600000;
+
+        const hunger = Math.max(0, exe.hunger - Math.floor(hours * 5));
+        const sleep = Math.max(0, exe.sleep - Math.floor(hours * 3));
+        const hygiene = Math.max(0, exe.hygiene - Math.floor(hours * 2));
+        let corruption = exe.corruption;
+        let bond = exe.bond;
+        let syc = exe.syc;
+        let pot = exe.pot;
+        let tec = exe.tec;
+
+        let forcedSleep = false;
+
+        if (sleep <= 0 && hours > 4) {
+            corruption = Math.min(100, corruption + 1);
+            bond = Math.max(0, bond - 1);
+            syc = Math.max(0, syc - 2);
+            forcedSleep = true;
+        }
+
+        if (hunger <= 0) {
+            corruption = Math.min(100, corruption + 2);
+            bond = Math.max(0, bond - 1);
+            pot = Math.max(0, pot - 1);
+        }
+
+        if (hygiene <= 0 && hours > 6) {
+            corruption = Math.min(100, corruption + 1);
+            tec = Math.max(0, tec - 1);
+        }
+
+        return {
+            decay: {
+                hunger,
+                sleep,
+                hygiene,
+                corruption,
+                bond,
+                syc,
+                pot,
+                tec,
+                forcedSleep,
+            },
+            updatedAt: now,
+        };
+    }
+
+    async getStatusPreview(exeId: string, userId: string) {
+        const exe = await this.prisma.exe.findFirst({ where: { id: exeId, userId } });
+        if (!exe) throw new NotFoundException('Exe not found');
+
+        const { decay } = this.calculateDecay(exe);
+        return {
+            ...decay,
+            lastUpdate: exe.updatedAt,
+        };
+    }
+
+    async clean(exeId: string, userId: string) {
+        const exe = await this.prisma.exe.findFirst({ where: { id: exeId, userId } });
+        if (!exe) throw new NotFoundException('Exe not found');
+
+        const decayedExe = await this.applyDecayAndReturn(exe);
+
+        const newHygiene = Math.min(100, decayedExe.hygiene + 30);
+        const newBond = Math.min(100, decayedExe.bond + 1);
+        const newCorruption = Math.max(0, decayedExe.corruption - 2);
+
+        return this.prisma.exe.update({
+            where: { id: exe.id },
+            data: {
+                hygiene: newHygiene,
+                bond: newBond,
+                corruption: newCorruption,
+                updatedAt: new Date(),
+            },
+        });
+    }
+
+    async sleep(exeId: string, userId: string) {
+        const exe = await this.prisma.exe.findFirst({ where: { id: exeId, userId } });
+        if (!exe) throw new NotFoundException('Exe not found');
+
+        const decayedExe = await this.applyDecayAndReturn(exe);
+
+        const newSleep = Math.min(100, decayedExe.sleep + 40);
+        const newSyc = Math.min(100, decayedExe.syc + 2);
+        const newBond = Math.min(100, decayedExe.bond + 2);
+
+        return this.prisma.exe.update({
+            where: { id: exe.id },
+            data: {
+                sleep: newSleep,
+                syc: newSyc,
+                bond: newBond,
+                updatedAt: new Date(),
+            },
+        });
+    }
+
+    async sync(exeId: string, userId: string) {
+        const exe = await this.prisma.exe.findFirst({ where: { id: exeId, userId } });
+        if (!exe) throw new NotFoundException('Exe not found');
+
+        const decayedExe = await this.applyDecayAndReturn(exe);
+
+        const newSyc = Math.min(100, decayedExe.syc + 5);
+        const newBond = Math.min(100, decayedExe.bond + 1);
+        const newCorruption = Math.max(0, decayedExe.corruption - 1);
+
+        return this.prisma.exe.update({
+            where: { id: exe.id },
+            data: {
+                syc: newSyc,
+                bond: newBond,
+                corruption: newCorruption,
+                updatedAt: new Date(),
+            },
+        });
+    }
+
 }

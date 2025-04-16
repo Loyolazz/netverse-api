@@ -22,6 +22,10 @@ export class AuthService {
     }
 
     async login(dto: LoginDto) {
+        if (!dto.email || !dto.password) {
+            throw new UnauthorizedException('Email and password are required');
+        }
+
         const user = await this.userService.findByEmail(dto.email);
         if (!user) throw new UnauthorizedException('User not found');
 
